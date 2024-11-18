@@ -25,9 +25,12 @@ const int Height = 768;
 
 // There are four balls
 // initialize the position (coordinate) of each ball (ball0 ~ ball3)
-const float spherePos[4][2] = { {-2.7f,0} , {+2.4f,0} , {3.3f,0} , {-2.7f,-0.9f}}; 
+const float spherePos[4][2] = { {-2.7f,0} , {+2.4f,1.1f} , {2.0f,0} , {-2.7f,-0.9f}};
 // initialize the color of each ball (ball0 ~ ball3)
 const D3DXCOLOR sphereColor[4] = {d3d::RED, d3d::RED, d3d::YELLOW, d3d::WHITE};
+
+//추가 변수
+int spaceActivate = 0;
 
 // -----------------------------------------------------------------------------
 // Transform matrices
@@ -99,17 +102,43 @@ public:
 		m_pSphereMesh->DrawSubset(0);
     }
 	
-    bool hasIntersected(CSphere& ball) 
-	{
-		// Insert your code here.
+    bool hasIntersected(CSphere& ball)
+    {
+        D3DXVECTOR3 center1 = this->getCenter();
+        D3DXVECTOR3 center2 = ball.getCenter();
+        float distance = D3DXVec3Length(&(center1 - center2)); // 두 공의 중심 사이의 거리
+        return distance <= (this->getRadius() + ball.getRadius()); // 두 공의 반지름 합과 비교
+    }
 
-		return false;
-	}
-	
-	void hitBy(CSphere& ball) 
-	{ 
-		// Insert your code here.
-	}
+
+    void hitBy(CSphere& ball)
+    {
+        if (hasIntersected(ball)) {
+            // 두 공의 중심 좌표
+            D3DXVECTOR3 center1 = this->getCenter();
+            D3DXVECTOR3 center2 = ball.getCenter();
+
+            // 충돌 방향 벡터 계산 (공1 -> 공2)
+            D3DXVECTOR3 collisionNormal = center2 - center1;
+            D3DXVec3Normalize(&collisionNormal, &collisionNormal); // 정규화
+
+            // 기존 속도 벡터
+            D3DXVECTOR3 velocity1(this->getVelocity_X(), 0, this->getVelocity_Z());
+            D3DXVECTOR3 velocity2(ball.getVelocity_X(), 0, ball.getVelocity_Z());
+
+            // 충돌 방향 벡터와 기존 속도 벡터의 내적 계산
+            float v1_dot_n = D3DXVec3Dot(&velocity1, &collisionNormal);
+            float v2_dot_n = D3DXVec3Dot(&velocity2, &collisionNormal);
+
+            // 새로운 속도 계산 (반사 벡터)
+            D3DXVECTOR3 newVelocity1 = velocity1 - 2 * v1_dot_n * collisionNormal;
+            D3DXVECTOR3 newVelocity2 = velocity2 - 2 * v2_dot_n * collisionNormal;
+
+            // 새로운 속도를 공에 설정
+            this->setPower(newVelocity1.x, newVelocity1.z);
+            ball.setPower(newVelocity2.x, newVelocity2.z);
+        }
+    }
 
 	void ballUpdate(float timeDiff) 
 	{
@@ -125,14 +154,14 @@ public:
 
 			//correction of position of ball
 			// Please uncomment this part because this correction of ball position is necessary when a ball collides with a wall
-			/*if(tX >= (4.5 - M_RADIUS))
+			if(tX >= (4.5 - M_RADIUS))
 				tX = 4.5 - M_RADIUS;
 			else if(tX <=(-4.5 + M_RADIUS))
 				tX = -4.5 + M_RADIUS;
 			else if(tZ <= (-3 + M_RADIUS))
 				tZ = -3 + M_RADIUS;
 			else if(tZ >= (3 - M_RADIUS))
-				tZ = 3 - M_RADIUS;*/
+				tZ = 3 - M_RADIUS;
 			
 			this->setCenter(tX, cord.y, tZ);
 		}
@@ -239,16 +268,42 @@ public:
 		m_pBoundMesh->DrawSubset(0);
     }
 	
-	bool hasIntersected(CSphere& ball) 
-	{
-		// Insert your code here.
-		return false;
-	}
-
-	void hitBy(CSphere& ball) 
-	{
-		// Insert your code here.
-	}    
+    bool hasIntersected(CSphere& ball) {
+        D3DXVECTOR3 center = ball.getCenter(); 
+        float radius = ball.getRadius(); 
+        // Check if the sphere's center is within the bounds of the wall, considering the sphere's radius 
+        if (center.x + radius >= m_x - m_width / 2 && center.x - radius <= m_x + m_width / 2 && center.z + radius >= m_z - m_depth / 2 && center.z - radius <= m_z + m_depth / 2) { 
+            return true; 
+        } 
+        return false; 
+    } 
+    
+    void hitBy(CSphere& ball) {
+        if (hasIntersected(ball)) {
+            D3DXVECTOR3 center = ball.getCenter(); float radius = ball.getRadius(); // 벽 표면의 법선 벡터 결정 
+            D3DXVECTOR3 normal(0, 0, 0); 
+            if (center.x + radius >= m_x - m_width / 2 && center.x - radius <= m_x + m_width / 2) { 
+                if (center.z < m_z) { normal = D3DXVECTOR3(0, 0, -1); 
+                // 앞면과의 충돌 
+                } else { 
+                    normal = D3DXVECTOR3(0, 0, 1);
+                    // 뒷면과의 충돌 
+                } 
+            } if (center.z + radius >= m_z - m_depth / 2 && center.z - radius <= m_z + m_depth / 2) { 
+                if (center.x < m_x) { 
+                    normal = D3DXVECTOR3(-1, 0, 0); 
+                    // 왼쪽 면과의 충돌 
+                } 
+                else { 
+                    normal = D3DXVECTOR3(1, 0, 0); // 오른쪽 면과의 충돌 
+                } 
+            } // 반사 벡터 계산 
+            D3DXVECTOR3 velocity(ball.getVelocity_X(), 0, ball.getVelocity_Z()); float dotProduct = D3DXVec3Dot(&velocity, &normal);
+            D3DXVECTOR3 reflection = velocity - 2 * dotProduct * normal; 
+            // 새로운 속도 설정 
+            ball.setPower(reflection.x, reflection.z); 
+        } 
+    }
 	
 	void setPosition(float x, float y, float z)
 	{
@@ -382,6 +437,7 @@ void destroyAllLegoBlock(void)
 // initialization
 bool Setup()
 {
+    spaceActivate = 0;
 	int i;
 	
     D3DXMatrixIdentity(&g_mWorld);
@@ -389,24 +445,24 @@ bool Setup()
     D3DXMatrixIdentity(&g_mProj);
 		
 	// create plane and set the position
-    if (false == g_legoPlane.create(Device, -1, -1, 9, 0.03f, 6, d3d::GREEN)) return false;
+    if (false == g_legoPlane.create(Device, -1, -1, 6, 0.03f, 7, d3d::GREEN)) return false;
     g_legoPlane.setPosition(0.0f, -0.0006f / 5, 0.0f);
-	
-	// create walls and set the position. note that there are four walls
-	if (false == g_legowall[0].create(Device, -1, -1, 9, 0.3f, 0.12f, d3d::DARKRED)) return false;
-	g_legowall[0].setPosition(0.0f, 0.12f, 3.06f);
-	if (false == g_legowall[1].create(Device, -1, -1, 9, 0.3f, 0.12f, d3d::DARKRED)) return false;
-	g_legowall[1].setPosition(0.0f, 0.12f, -3.06f);
-	if (false == g_legowall[2].create(Device, -1, -1, 0.12f, 0.3f, 6.24f, d3d::DARKRED)) return false;
-	g_legowall[2].setPosition(4.56f, 0.12f, 0.0f);
-	if (false == g_legowall[3].create(Device, -1, -1, 0.12f, 0.3f, 6.24f, d3d::DARKRED)) return false;
-	g_legowall[3].setPosition(-4.56f, 0.12f, 0.0f);
+
+    // create walls and set the position. note that there are four walls
+    if (false == g_legowall[0].create(Device, -1, -1, 6, 0.3f, 0.12f, d3d::DARKRED)) return false;
+    g_legowall[0].setPosition(0.0f, 0.12f, 3.5);
+    if (false == g_legowall[1].create(Device, -1, -1, 6, 0, 0.12f, d3d::GREEN)) return false;
+    g_legowall[1].setPosition(0.0f, 0, -3.5);
+    if (false == g_legowall[2].create(Device, -1, -1, 0.12f, 0.3f, 7.12, d3d::DARKRED)) return false;
+    g_legowall[2].setPosition(3, 0.12f, 0.0f);
+    if (false == g_legowall[3].create(Device, -1, -1, 0.12f, 0.3f, 7.12, d3d::DARKRED)) return false;
+    g_legowall[3].setPosition(-3, 0.12f, 0.0f);
 
 	// create four balls and set the position
 	for (i=0;i<4;i++) {
 		if (false == g_sphere[i].create(Device, sphereColor[i])) return false;
 		g_sphere[i].setCenter(spherePos[i][0], (float)M_RADIUS , spherePos[i][1]);
-		g_sphere[i].setPower(0,0);
+		g_sphere[i].setPower(0.1f,0.1f);
 	}
 	
 	// create blue ball for set direction
@@ -531,73 +587,75 @@ LRESULT CALLBACK d3d::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 break;
             case VK_SPACE:
-				
-				D3DXVECTOR3 targetpos = g_target_blueball.getCenter();
-				D3DXVECTOR3	whitepos = g_sphere[3].getCenter();
-				double theta = acos(sqrt(pow(targetpos.x - whitepos.x, 2)) / sqrt(pow(targetpos.x - whitepos.x, 2) +
-					pow(targetpos.z - whitepos.z, 2)));		// 기본 1 사분면
-				if (targetpos.z - whitepos.z <= 0 && targetpos.x - whitepos.x >= 0) { theta = -theta; }	//4 사분면
-				if (targetpos.z - whitepos.z >= 0 && targetpos.x - whitepos.x <= 0) { theta = PI - theta; } //2 사분면
-				if (targetpos.z - whitepos.z <= 0 && targetpos.x - whitepos.x <= 0){ theta = PI + theta; } // 3 사분면
-				double distance = sqrt(pow(targetpos.x - whitepos.x, 2) + pow(targetpos.z - whitepos.z, 2));
-				g_sphere[3].setPower(distance * cos(theta), distance * sin(theta));
-
+                if (spaceActivate == 0) {
+                    D3DXVECTOR3 targetpos = g_target_blueball.getCenter();
+                    D3DXVECTOR3	whitepos = g_sphere[3].getCenter();
+                    double theta = acos(sqrt(pow(targetpos.x - whitepos.x, 2)) / sqrt(pow(targetpos.x - whitepos.x, 2) +
+                        pow(targetpos.z - whitepos.z, 2)));		// 기본 1 사분면
+                    if (targetpos.z - whitepos.z <= 0 && targetpos.x - whitepos.x >= 0) { theta = -theta; }	//4 사분면
+                    if (targetpos.z - whitepos.z >= 0 && targetpos.x - whitepos.x <= 0) { theta = PI - theta; } //2 사분면
+                    if (targetpos.z - whitepos.z <= 0 && targetpos.x - whitepos.x <= 0) { theta = PI + theta; } // 3 사분면
+                    double distance = sqrt(pow(targetpos.x - whitepos.x, 2) + pow(targetpos.z - whitepos.z, 2));
+                    g_sphere[3].setPower(distance * cos(theta), distance * sin(theta));
+                    // 3번째공만 움직이는 이유
+                    spaceActivate = 1;
+                }
 				break;
 
 			}
 			break;
         }
 		
-	case WM_MOUSEMOVE:
-        {
-            int new_x = LOWORD(lParam);
-            int new_y = HIWORD(lParam);
-			float dx;
-			float dy;
-			
-            if (LOWORD(wParam) & MK_LBUTTON) {
-				
-                if (isReset) {
-                    isReset = false;
-                } else {
-                    D3DXVECTOR3 vDist;
-                    D3DXVECTOR3 vTrans;
-                    D3DXMATRIX mTrans;
-                    D3DXMATRIX mX;
-                    D3DXMATRIX mY;
-					
-                    switch (move) {
-                    case WORLD_MOVE:
-                        dx = (old_x - new_x) * 0.01f;
-                        dy = (old_y - new_y) * 0.01f;
-                        D3DXMatrixRotationY(&mX, dx);
-                        D3DXMatrixRotationX(&mY, dy);
-                        g_mWorld = g_mWorld * mX * mY;
-						
-                        break;
-                    }
-                }
-				
-                old_x = new_x;
-                old_y = new_y;
+	//case WM_MOUSEMOVE:
+ //       {
+ //           int new_x = LOWORD(lParam);
+ //           int new_y = HIWORD(lParam);
+	//		float dx;
+	//		float dy;
+	//		
+ //           if (LOWORD(wParam) & MK_LBUTTON) {
+	//			
+ //               if (isReset) {
+ //                   isReset = false;
+ //               } else {
+ //                   D3DXVECTOR3 vDist;
+ //                   D3DXVECTOR3 vTrans;
+ //                   D3DXMATRIX mTrans;
+ //                   D3DXMATRIX mX;
+ //                   D3DXMATRIX mY;
+	//				
+ //                   switch (move) {
+ //                   case WORLD_MOVE:
+ //                       dx = (old_x - new_x) * 0.01f;
+ //                       dy = (old_y - new_y) * 0.01f;
+ //                       D3DXMatrixRotationY(&mX, dx);
+ //                       D3DXMatrixRotationX(&mY, dy);
+ //                       g_mWorld = g_mWorld * mX * mY;
+	//					
+ //                       break;
+ //                   }
+ //               }
+	//			
+ //               old_x = new_x;
+ //               old_y = new_y;
 
-            } else {
-                isReset = true;
-				
-				if (LOWORD(wParam) & MK_RBUTTON) {
-					dx = (old_x - new_x);// * 0.01f;
-					dy = (old_y - new_y);// * 0.01f;
-		
-					D3DXVECTOR3 coord3d=g_target_blueball.getCenter();
-					g_target_blueball.setCenter(coord3d.x+dx*(-0.007f),coord3d.y,coord3d.z+dy*0.007f );
-				}
-				old_x = new_x;
-				old_y = new_y;
-				
-                move = WORLD_MOVE;
-            }
-            break;
-        }
+ //           } else {
+ //               isReset = true;
+	//			
+	//			if (LOWORD(wParam) & MK_RBUTTON) {
+	//				dx = (old_x - new_x);// * 0.01f;
+	//				dy = (old_y - new_y);// * 0.01f;
+	//	
+	//				D3DXVECTOR3 coord3d=g_target_blueball.getCenter();
+	//				g_target_blueball.setCenter(coord3d.x+dx*(-0.007f),coord3d.y,coord3d.z+dy*0.007f );
+	//			}
+	//			old_x = new_x;
+	//			old_y = new_y;
+	//			
+ //               move = WORLD_MOVE;
+ //           }
+ //           break;
+ //       }
 	}
 	
 	return ::DefWindowProc(hwnd, msg, wParam, lParam);
