@@ -545,6 +545,7 @@ bool Display(float timeDelta)
 
 LRESULT CALLBACK d3d::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+
 	static bool wire = false;
 	static bool isReset = true;
 	static int old_x = 0;
