@@ -17,6 +17,8 @@
 #include <cstdio>
 #include <cassert>
 
+#define BALLS 41
+
 IDirect3DDevice9* Device = NULL;
 
 // window size
@@ -24,15 +26,29 @@ const int Width = 1024;
 const int Height = 768;
 
 // 10개의 노란 공의 위치 초기화 (중앙에 맞추어 배치, 공 간격 0.42 이상)
-const float spherePos[10][2] = {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 배열크기와 위치 설정
-	{-3.5f, 2.4f}, {-2.5f, 2.4f}, {-1.5f, 2.4f}, {-0.5f, 2.4f}, {0.5f, 2.4f},
-	{1.5f, 2.4f}, {2.5f, 2.4f}, {3.5f, 2.4f}, {-3.5f, 1.4f}, {3.5f, 1.4f}
+const float spherePos[BALLS][2] = {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 배열크기와 위치 설정
+	{-1.75f, 3.5f}, {-1.25f, 3.5f}, {-0.75f, 3.5f}, {-0.25f, 3.5f},
+	{0.25f, 3.5f}, {0.75f, 3.5f}, {1.25f, 3.5f}, {1.75f, 3.5f},
+	{-2.25f, 3.0f}, {2.25f, 3.0f},
+	{-2.75f, 2.5f}, {-2.75f, 2.0f}, {-2.75f, 1.5f}, {-2.75f, 1.0f}, {-2.75f, 0.5f}, {-2.75f, 0.0f}, {-2.75f, -0.5f}, {-2.75f, -1.0f}, {-2.75f, -1.5f}, {-2.75f, -2.0f},
+	{2.75f, 2.5f}, {2.75f, 2.0f}, {2.75f, 1.5f}, {2.75f, 1.0f}, {2.75f, 0.5f}, {2.75f, 0.0f}, {2.75f, -0.5f}, {2.75f, -1.0f}, {2.75f, -1.5f}, {2.75f, -2.0f},
+	{-2.25f, -2.5f}, {2.25f, -2.5f},
+	{-1.75f, -3.0f}, {-1.25f, -3.0f}, {-0.75f, -3.0f}, {-0.25f, -3.0f},
+	{0.25f, -3.0f}, {0.75f, -3.0f}, {1.25f, -3.0f}, {1.75f, -3.0f},
+	{0.0f, -1.0f}
 };
 
 // 10개의 공 모두 노란색
-const D3DXCOLOR sphereColor[10] = {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 색 설정
-	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::WHITE, d3d::YELLOW,
-	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW
+const D3DXCOLOR sphereColor[BALLS] = {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 색 설정
+	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW,
+	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW,
+	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW,
+	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW,
+	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW,
+	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW,
+	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW,
+	d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW, d3d::YELLOW,
+	d3d::RED
 };
 
 
@@ -202,6 +218,16 @@ public:
 		D3DXVECTOR3 org(center_x, center_y, center_z);
 		return org;
 	}
+
+	/* // 공을 좌측으로 이동
+	void moveLeft() {
+		center_x -= 0.1f;  // 이동 속도 조정
+	}
+
+	// 공을 우측으로 이동
+	void moveRight() {
+		center_x += 0.1f;  // 이동 속도 조정
+	} */
 
 private:
 	D3DXMATRIX              m_mLocal;
@@ -397,8 +423,8 @@ private:
 // -----------------------------------------------------------------------------
 CWall	g_legoPlane;
 CWall	g_legowall[4];
-CSphere	g_sphere[10];
-CSphere	g_target_redball;
+CSphere	g_sphere[BALLS];
+CSphere	g_target_whiteball;
 CLight	g_light;
 
 double g_camera_pos[3] = { 0.0, 5.0, -8.0 };
@@ -436,15 +462,15 @@ bool Setup()
 	g_legowall[3].setPosition(-4.56f, 0.12f, 0.0f);
 
 	// create four balls and set the position
-	for (i = 0; i < 10; i++) {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	for (i = 0; i < BALLS; i++) {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		if (false == g_sphere[i].create(Device, sphereColor[i])) return false;
 		g_sphere[i].setCenter(spherePos[i][0], (float)M_RADIUS, spherePos[i][1]);
 		g_sphere[i].setPower(0, 0);
 	}
 
-	// create blue ball for set direction
-	if (false == g_target_redball.create(Device, d3d::RED)) return false;
-	g_target_redball.setCenter(.0f, (float)M_RADIUS, .0f);
+	// create white ball for set direction
+	if (false == g_target_whiteball.create(Device, d3d::WHITE)) return false;
+	g_target_whiteball.setCenter(.0f, (float)M_RADIUS, -4.0f);
 
 	// light setting 
 	D3DLIGHT9 lit;
@@ -507,22 +533,22 @@ bool Display(float timeDelta)
 		Device->BeginScene();
 
 		// update the position of each ball. during update, check whether each ball hit by walls.
-		for (i = 0; i < 10; i++) {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 위치 업데이트 (아마 지금은 필요없는 느낌)
+		for (i = 0; i < BALLS; i++) {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			g_sphere[i].ballUpdate(timeDelta);
-			for (j = 0; j < 10; j++) { g_legowall[i].hitBy(g_sphere[j]); }
+			for (j = 0; j < 4; j++) { g_legowall[j].hitBy(g_sphere[i]); }
 		}
 
 		// check whether any two balls hit together and update the direction of balls
-		for (i = 0; i < 10; i++) {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 방향 업데이트 (아마 지금은 필요없는 느낌)
-			for (j = 0; j < 10; j++) {
+		for (i = 0; i < BALLS; i++) {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			for (j = 0; j < BALLS; j++) {
 				if (i >= j) { continue; }
 				g_sphere[i].hitBy(g_sphere[j]);
 			}
 		}
 
 		// Additional collision check with the target blue ball
-		for (i = 0; i < 4; i++) {
-			g_sphere[i].hitBy(g_target_redball);  // 흰 공이 파란 공과 충돌하는지 확인
+		for (i = 0; i < BALLS; i++) {
+			g_sphere[i].hitBy(g_target_whiteball);  // 흰 공이 파란 공과 충돌하는지 확인
 		}
 
 		// draw plane, walls, and spheres
@@ -530,10 +556,10 @@ bool Display(float timeDelta)
 		for (i = 0; i < 4; i++) {
 			g_legowall[i].draw(Device, g_mWorld);
 		}
-		for (i = 0; i < 10; i++) {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 공 그리기 - 여기서 초기 공을 그린다
+		for (i = 0; i < BALLS; i++) {  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 공 그리기 - 여기서 초기 공을 그린다
 			g_sphere[i].draw(Device, g_mWorld);
 		}
-		g_target_redball.draw(Device, g_mWorld);
+		g_target_whiteball.draw(Device, g_mWorld);
 		g_light.draw(Device);
 
 		Device->EndScene();
@@ -545,12 +571,19 @@ bool Display(float timeDelta)
 
 LRESULT CALLBACK d3d::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-
 	static bool wire = false;
 	static bool isReset = true;
 	static int old_x = 0;
 	static int old_y = 0;
 	static enum { WORLD_MOVE, LIGHT_MOVE, BLOCK_MOVE } move = WORLD_MOVE;
+
+	// 'targetpos'와 'redpos'는 키 입력이 있을 때마다 매번 갱신해야 합니다.
+	D3DXVECTOR3 targetpos;
+	D3DXVECTOR3 redpos;
+
+	// 'theta'를 switch 밖에서 선언
+	double theta = 0.0;
+	double distance = 0.0;
 
 	switch (msg) {
 	case WM_DESTROY:
@@ -571,21 +604,38 @@ LRESULT CALLBACK d3d::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					(wire ? D3DFILL_WIREFRAME : D3DFILL_SOLID));
 			}
 			break;
+
 		case VK_SPACE:
-
-			D3DXVECTOR3 targetpos = g_target_redball.getCenter();
-			D3DXVECTOR3	whitepos = g_sphere[3].getCenter();
-			double theta = acos(sqrt(pow(targetpos.x - whitepos.x, 2)) / sqrt(pow(targetpos.x - whitepos.x, 2) +
-				pow(targetpos.z - whitepos.z, 2)));		// 기본 1 사분면
-			if (targetpos.z - whitepos.z <= 0 && targetpos.x - whitepos.x >= 0) { theta = -theta; }	//4 사분면
-			if (targetpos.z - whitepos.z >= 0 && targetpos.x - whitepos.x <= 0) { theta = PI - theta; } //2 사분면
-			if (targetpos.z - whitepos.z <= 0 && targetpos.x - whitepos.x <= 0) { theta = PI + theta; } // 3 사분면
-			double distance = sqrt(pow(targetpos.x - whitepos.x, 2) + pow(targetpos.z - whitepos.z, 2));
-			g_sphere[3].setPower(distance * cos(theta), distance * sin(theta));
-
+			// 공을 밀어내는 코드입니다.
+			targetpos = g_target_whiteball.getCenter();
+			redpos = g_sphere[BALLS - 1].getCenter();
+			theta = acos(sqrt(pow(targetpos.x - redpos.x, 2)) / sqrt(pow(targetpos.x - redpos.x, 2) +
+				pow(targetpos.z - redpos.z, 2)));  // 기본 1 사분면
+			if (targetpos.z - redpos.z <= 0 && targetpos.x - redpos.x >= 0) { theta = -theta; }  // 4 사분면
+			if (targetpos.z - redpos.z >= 0 && targetpos.x - redpos.x <= 0) { theta = PI - theta; } // 2 사분면
+			if (targetpos.z - redpos.z <= 0 && targetpos.x - redpos.x <= 0) { theta = PI + theta; } // 3 사분면
+			distance = sqrt(pow(targetpos.x - redpos.x, 2) + pow(targetpos.z - redpos.z, 2));
+			g_sphere[BALLS - 1].setPower(distance * cos(theta), distance * sin(theta));
 			break;
 
-		}
+			// 타겟볼 방향키 조정
+		case VK_LEFT:
+			// 위치 갱신 후 이동
+			targetpos = g_target_whiteball.getCenter();
+			redpos = g_sphere[BALLS - 1].getCenter();
+			g_target_whiteball.setCenter(targetpos.x - 0.2f, targetpos.y, targetpos.z);  // 왼쪽으로 이동
+			g_sphere[BALLS - 1].setCenter(redpos.x - 0.2f, redpos.y, redpos.z);  // 빨간 공도 함께 이동
+			break;
+
+		case VK_RIGHT:
+			// 위치 갱신 후 이동
+			targetpos = g_target_whiteball.getCenter();
+			redpos = g_sphere[BALLS - 1].getCenter();
+			g_target_whiteball.setCenter(targetpos.x + 0.2f, targetpos.y, targetpos.z);  // 오른쪽으로 이동
+			g_sphere[BALLS - 1].setCenter(redpos.x + 0.2f, redpos.y, redpos.z);  // 빨간 공도 함께 이동
+			break;
+
+		} // end of switch(wParam)
 		break;
 	}
 
@@ -631,8 +681,8 @@ LRESULT CALLBACK d3d::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				dx = (old_x - new_x);// * 0.01f;
 				dy = (old_y - new_y);// * 0.01f;
 
-				D3DXVECTOR3 coord3d = g_target_redball.getCenter();
-				g_target_redball.setCenter(coord3d.x + dx * (-0.007f), coord3d.y, coord3d.z + dy * 0.007f);
+				D3DXVECTOR3 coord3d = g_target_whiteball.getCenter();
+				g_target_whiteball.setCenter(coord3d.x + dx * (-0.007f), coord3d.y, coord3d.z + dy * 0.007f);
 			}
 			old_x = new_x;
 			old_y = new_y;
