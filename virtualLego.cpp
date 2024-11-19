@@ -382,39 +382,13 @@ public:
 
     }
 
-    //bool hasIntersected(CSphere& ball) {
-    //    D3DXVECTOR3 center = ball.getCenter(); 
-    //    float radius = ball.getRadius(); 
-    //    // Check if the sphere's center is within the bounds of the wall, considering the sphere's radius 
-    //    if ((abs(center.x - m_x) <= radius+m_width/2) && (abs(center.z - m_z) <= radius + m_depth / 2)) {
-    //        return true; 
-    //    } 
-    //    return false; 
-    //} 
-    //
-    //void hitBy(CSphere& ball) {
-    //    if (hasIntersected(ball)) {
-    //        D3DXVECTOR3 center = ball.getCenter(); float radius = ball.getRadius(); // 벽 표면의 법선 벡터 결정 
-    //        D3DXVECTOR3 velocity(ball.getVelocity_X(), 0, ball.getVelocity_Z());
 
-    //        if ((abs(center.z - m_z) <= radius + m_depth / 2) && m_width >= 6) {
-    //            if (center.z < m_z) {
-    //                //위쪽 벽
-    //                ball.setPower(velocity.x, -velocity.z);
-    //                return;
-    //            }
-    //        } if ((abs(center.x - m_x) <= radius + m_width / 2) && m_height >= 7) {
-    //            //왼쪽이던 오른쪽이던
-    //            ball.setPower(-velocity.x, velocity.z);
-    //        }
-    //    }
-    //}
-
-    void setPosition(float x, float y, float z)
-    {
-        D3DXMATRIX m;
-        this->m_x = x;
-        this->m_z = z;
+    }
+	void setPosition(float x, float y, float z)
+	{
+		D3DXMATRIX m;
+		this->m_x = x;
+		this->m_z = z;
 
         D3DXMatrixTranslation(&m, x, y, z);
         setLocalTransform(m);
@@ -570,25 +544,8 @@ bool Setup()
     D3DXMatrixIdentity(&g_mView);
     D3DXMatrixIdentity(&g_mProj);
 
-    //게임 속성을 설정합니다.
-    life = 5;
-
-    //글자의 위치를 설정합니다.
-    D3DXFONT_DESC fontDesc = { 24, // Height 
-        0, // Width 
-        0, // Weight 
-        0, // MipLevels 
-        FALSE, // Italic 
-        DEFAULT_CHARSET, // CharSet 
-        OUT_DEFAULT_PRECIS, // OutputPrecision 
-        CLIP_DEFAULT_PRECIS, // Quality 
-        DEFAULT_PITCH, // PitchAndFamily 
-        "Arial" // FaceName 
-    }; if (FAILED(D3DXCreateFontIndirect(Device, &fontDesc, &g_pFont))) {
-        ::MessageBox(0, "D3DXCreateFontIndirect() - FAILED", 0, 0); 
-        return false;
-    }
-
+		
+	
     // create plane and set the position
     if (false == g_legoPlane.create(Device, -1, -1, 6, 0.03f, 7, d3d::GREEN)) return false;
     g_legoPlane.setPosition(0.0f, -0.0006f / 5, 0.0f);
@@ -692,7 +649,7 @@ bool Display(float timeDelta)
 
         //벽에 공이 충돌했는지 확인합니다.
         for (j = 0; j < 3; j++) {
-            g_legowall[j].hitBy(g_target_redball);
+           g_legowall[i].hitBy(g_target_redball);
         }
         //공끼리 충돌했는지 확인합니다.
         g_target_redball.hitBy(g_target_whiteball);
