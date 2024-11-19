@@ -1,0 +1,16 @@
+﻿################################################################################
+# 이 .gitignore 파일은 Microsoft(R) Visual Studio에서 자동으로 만들어졌습니다.
+################################################################################
+
+/.vs
+/Debug
+/VirtualLego.dsp
+*.dsw
+*.opt
+*.plg
+*.sdf
+*.sln
+*.vcproj
+*.user
+*.vcxproj
+/VirtualLego.vcxproj.filters
