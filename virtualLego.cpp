@@ -304,75 +304,95 @@ public:
         pDevice->SetMaterial(&m_mtrl);
 		m_pBoundMesh->DrawSubset(0);
     }
-	
+
     bool hasIntersected(CSphere& ball) {
-        D3DXVECTOR3 center = ball.getCenter(); 
-        float radius = ball.getRadius(); 
-        // Check if the sphere's center is within the bounds of the wall, considering the sphere's radius 
-        if (center.x + radius >= m_x - m_width / 2 && center.x - radius <= m_x + m_width / 2 && center.z + radius >= m_z - m_depth / 2 && center.z - radius <= m_z + m_depth / 2) { 
-            return true; 
-        } 
-        return false; 
-    } 
-    
+        float ballX = ball.getCenter().x;
+        float ballZ = ball.getCenter().z;
+        float ballR = ball.getRadius();
+
+        float wallXmin = this->m_x - (this->m_width / 2 + ballR);
+        float wallXmax = this->m_x + (this->m_width / 2 + ballR);
+        float wallZmin = this->m_z - (this->m_depth / 2 + ballR);
+        float wallZmax = this->m_z + (this->m_depth / 2 + ballR);
+
+        if ((wallXmin <= ballX && ballX <= wallXmax) && (wallZmin <= ballZ && ballZ <= wallZmax)) {
+            return true;
+        }
+
+        return false;
+    }
+
+
     void hitBy(CSphere& ball) {
         if (hasIntersected(ball)) {
-            D3DXVECTOR3 center = ball.getCenter(); float radius = ball.getRadius(); // 벽 표면의 법선 벡터 결정 
-            D3DXVECTOR3 normal(0, 0, 0); 
-            if (center.x + radius >= m_x - m_width / 2 && center.x - radius <= m_x + m_width / 2) { 
-                if (center.z < m_z) { normal = D3DXVECTOR3(0, 0, -1); 
-                // 앞면과의 충돌 
-                } else { 
-                    normal = D3DXVECTOR3(0, 0, 1);
-                    // 뒷면과의 충돌 
-                } 
-            } if (center.z + radius >= m_z - m_depth / 2 && center.z - radius <= m_z + m_depth / 2) { 
-                if (center.x < m_x) { 
-                    normal = D3DXVECTOR3(-1, 0, 0); 
-                    // 왼쪽 면과의 충돌 
-                } 
-                else { 
-                    normal = D3DXVECTOR3(1, 0, 0); // 오른쪽 면과의 충돌 
-                } 
-            } // 반사 벡터 계산 
-            D3DXVECTOR3 velocity(ball.getVelocity_X(), 0, ball.getVelocity_Z()); float dotProduct = D3DXVec3Dot(&velocity, &normal);
-            D3DXVECTOR3 reflection = velocity - 2 * dotProduct * normal; 
-            // 새로운 속도 설정 
-            ball.setPower(reflection.x, reflection.z); 
-        } 
-        //if (hasIntersected(ball)) {
-        //    D3DXVECTOR3 center = ball.getCenter(); 
-        //    float radius = ball.getRadius();
+            float ballX = ball.getCenter().x;
+            float ballY = ball.getCenter().y;
+            float ballZ = ball.getCenter().z;
+            float ballR = ball.getRadius();
 
-        //    // 벽 표면의 법선 벡터 결정 
-        //    D3DXVECTOR3 normal(0, 0, 0);
-        //    if (center.x + radius >= m_x - m_width / 2 && center.x - radius <= m_x + m_width / 2) {
-        //        if (center.z < m_z) {
-        //            normal = D3DXVECTOR3(0, 0, -1); // 앞면과의 충돌 
-        //        }
-        //        else {
-        //            normal = D3DXVECTOR3(0, 0, 1); // 뒷면과의 충돌 
-        //        }
-        //    } if (center.z + radius >= m_z - m_depth / 2 && center.z - radius <= m_z + m_depth / 2) {
-        //        if (center.x < m_x) {
-        //            normal = D3DXVECTOR3(-1, 0, 0); // 왼쪽 면과의 충돌 
-        //        }
-        //        else {
-        //            normal = D3DXVECTOR3(1, 0, 0); // 오른쪽 면과의 충돌 
-        //        }
-        //    }
-        //    // 반사 벡터 계산 
-        //    D3DXVECTOR3 velocity(ball.getVelocity_X(), 0, ball.getVelocity_Z());
-        //    float dotProduct = D3DXVec3Dot(&velocity, &normal);
-        //    D3DXVECTOR3 reflection = velocity - 2 * dotProduct * normal;
-        //    // 새로운 속도 설정 
-        //    ball.setPower(reflection.x, reflection.z);
-        //    // 충돌 후 공의 위치 조정 
-        //    D3DXVECTOR3 newCenter = center + normal * (radius + 0.01f);
-        //    // 0.01f는 작은 오차를 방지하기 위한 값 
-        //    ball.setCenter(newCenter.x, newCenter.y, newCenter.z);
-        //}
+            float wallXmin = this->m_x - (this->m_width / 2);
+            float wallXmax = this->m_x + (this->m_width / 2);
+            float wallZmin = this->m_z - (this->m_depth / 2);
+            float wallZmax = this->m_z + (this->m_depth / 2);
+
+            if ((wallXmin <= ballX && ballX <= wallXmax) && !(wallZmin <= ballZ && ballZ <= wallZmax)) {
+                if (wallZmin - ballR <= ballZ && ballZ <= this->m_z) {
+                    ballZ = wallZmin - ballR - 0.01f;
+                    ball.setCenter(ballX, ballY, ballZ);
+                }
+                else {
+                    ball.setCenter((wallXmax - wallXmin) / 2 + wallXmin, 0, wallZmin + 0.1);
+                    ball.setPower(0, 0);
+                }
+
+                ball.setPower(ball.getVelocity_X(), -ball.getVelocity_Z());
+            }
+
+            if (!(wallXmin <= ballX && ballX <= wallXmax) && (wallZmin <= ballZ && ballZ <= wallZmax)) {
+                if (wallXmin - ballR <= ballX && ballX <= this->m_x) {
+                    ballX = wallXmin - ballR - 0.01f;
+                    ball.setCenter(ballX, ballY, ballZ);
+                }
+                else {
+                    ballX = wallXmax + ballR + 0.01f;
+                    ball.setCenter(ballX, ballY, ballZ);
+                }
+
+                ball.setPower(-ball.getVelocity_X(), ball.getVelocity_Z());
+            }
+
+        }
+
     }
+
+    //bool hasIntersected(CSphere& ball) {
+    //    D3DXVECTOR3 center = ball.getCenter(); 
+    //    float radius = ball.getRadius(); 
+    //    // Check if the sphere's center is within the bounds of the wall, considering the sphere's radius 
+    //    if ((abs(center.x - m_x) <= radius+m_width/2) && (abs(center.z - m_z) <= radius + m_depth / 2)) {
+    //        return true; 
+    //    } 
+    //    return false; 
+    //} 
+    //
+    //void hitBy(CSphere& ball) {
+    //    if (hasIntersected(ball)) {
+    //        D3DXVECTOR3 center = ball.getCenter(); float radius = ball.getRadius(); // 벽 표면의 법선 벡터 결정 
+    //        D3DXVECTOR3 velocity(ball.getVelocity_X(), 0, ball.getVelocity_Z());
+
+    //        if ((abs(center.z - m_z) <= radius + m_depth / 2) && m_width >= 6) {
+    //            if (center.z < m_z) {
+    //                //위쪽 벽
+    //                ball.setPower(velocity.x, -velocity.z);
+    //                return;
+    //            }
+    //        } if ((abs(center.x - m_x) <= radius + m_width / 2) && m_height >= 7) {
+    //            //왼쪽이던 오른쪽이던
+    //            ball.setPower(-velocity.x, velocity.z);
+    //        }
+    //    }
+    //}
+
 	void setPosition(float x, float y, float z)
 	{
 		D3DXMATRIX m;
@@ -513,7 +533,7 @@ bool Setup()
     D3DXMatrixIdentity(&g_mWorld);
     D3DXMatrixIdentity(&g_mView);
     D3DXMatrixIdentity(&g_mProj);
-		
+	
 	// create plane and set the position
     if (false == g_legoPlane.create(Device, -1, -1, 6, 0.03f, 7, d3d::GREEN)) return false;
     g_legoPlane.setPosition(0.0f, -0.0006f / 5, 0.0f);
@@ -521,8 +541,6 @@ bool Setup()
     // create walls and set the position. note that there are four walls
     if (false == g_legowall[0].create(Device, -1, -1, 6, 0.3f, 0.12f, d3d::DARKRED)) return false;
     g_legowall[0].setPosition(0.0f, 0.12f, 3.5);
-    //if (false == g_legowall[1].create(Device, -1, -1, 6, 0, 0.12f, d3d::GREEN)) return false;
-    //g_legowall[1].setPosition(0.0f, 0, -3.5);
     if (false == g_legowall[1].create(Device, -1, -1, 0.12f, 0.3f, 7.12, d3d::DARKRED)) return false;
     g_legowall[1].setPosition(3, 0.12f, 0.0f);
     if (false == g_legowall[2].create(Device, -1, -1, 0.12f, 0.3f, 7.12, d3d::DARKRED)) return false;
@@ -619,7 +637,7 @@ bool Display(float timeDelta)
         g_target_whiteball.ballUpdate(timeDelta);
 
         for (j = 0; j < 3; j++) {
-           g_legowall[i].hitBy(g_target_whiteball);
+           g_legowall[j].hitBy(g_target_whiteball);
         }
 
 		//// check whether any two balls hit together and update the direction of balls
